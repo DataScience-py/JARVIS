@@ -1,7 +1,11 @@
-import requests
-import os
+"""A comand line of Jarvis."""
+
 import json
+import os
 import platform
+from typing import Any
+
+import requests
 
 FILE_CONFIG = "cli_config.json"
 
@@ -12,15 +16,51 @@ config = {
 
 
 def change_config(key: str, value: str) -> None:
-    config[key] = value
-    save_config(config)
+    """
+    change_config reset config value.
 
-def save_config(config: dict) -> None:
+    Parameters
+    ----------
+    key : str
+        name of config value (IN UPPER)
+    value : str
+        new value of config
+
+    Returns
+    -------
+    None
+        change global variable (config) and call saver data.
+    """
+    global config
+    config[key] = value
+    save_config()
+
+
+def save_config() -> None:
+    """
+    save_config to file config.
+
+    Returns
+    -------
+    None
+        Nothing.
+    """
+    global config
     with open(FILE_CONFIG, "w") as f:
         json.dump(config, f, indent=4)
 
 
-def load_config() -> dict:
+def load_config() -> None:
+    """
+    load_config get config from file if file if not exists create new file.
+
+    Use default setting if config is empty.
+
+    Returns
+    -------
+    None
+        Managment file
+    """
     global config
     if not os.path.exists(FILE_CONFIG):
         with open(FILE_CONFIG, "w") as f:
@@ -30,36 +70,75 @@ def load_config() -> dict:
         config = config if temp_config == {} else temp_config
     with open(FILE_CONFIG, "w") as f:
         json.dump(config, f)
-        
 
-def help() -> str:
-    server_help = get_from_server("help")
-    return server_help
+
+def help() -> None:
+    """
+    Help return help string from server and cli config.
+
+    Returns
+    -------
+    None
+        Output to console help information
+    """
+    print(get_from_server("help"))
+
 
 def get_from_server(url: str) -> str:
+    """
+    get_from_server create request to server and return response.
+
+    Parameters
+    ----------
+    url : str
+        realative path to router, when provided
+
+    Returns
+    -------
+    str
+        Response from server
+    """
     return requests.get(f"http://{config['HOST']}:{config['PORT']}/{url}").text
 
-def send_to_server(url: str, command: dict) -> None:
-    print(f"send to server, url: {url}, command: {command}")
+
+def send_to_server(url: str, command: dict[str, Any]) -> None:
+    """
+    send_to_server Create post request to server and send command.
+
+    Parameters
+    ----------
+    url : str
+        Relative path to router, when provided
+    command : dict
+        command to send to server
+    """
     requests.post(f"http://{config['HOST']}:{config['PORT']}/{url}", command)
 
-def clear_screen():
+
+def clear_screen() -> None:
     """
-    Очищает экран консоли в зависимости от операционной системы.
+    clear_screen clear screen.
+
+    Returns
+    -------
+    None
+        clear screen
     """
-    if platform.system() == "Windows": # Проверяем, если ОС - Windows
-        os.system('cls')
-    else: # Для macOS и Linux
-        os.system('clear')
+    if platform.system() == "Windows":  # Проверяем, если ОС - Windows
+        os.system("cls")
+    else:  # Для macOS и Linux
+        os.system("clear")
+
 
 def parser(string: str) -> list[str]:
     """
-    parser comand for send to Jarvis server
+    Parser comand and call it.
 
     Parameters
     ----------
     string : str
         string to parser
+
     Returns
     -------
     list[str]
@@ -72,10 +151,12 @@ def parser(string: str) -> list[str]:
                 pars[i] = "-" + pars[i]
             pars[i] = pars[i].upper()
             print(pars[i])
-        if pars[i].startswith("\"") or pars[i].startswith("'"):
+        if pars[i].startswith('"') or pars[i].startswith("'"):
             pars[i] = pars[i][1:]
-        if pars[i].endswith("\"") or pars[i].endswith("'"):
+        if pars[i].endswith('"') or pars[i].endswith("'"):
             pars[i] = pars[i][:-1]
+
+    # Manager for comand
 
     if pars[0] == "--help" or pars[0] == "help":
         if len(pars) == 1:
@@ -94,10 +175,13 @@ def parser(string: str) -> list[str]:
             print("Send long request, need 1 args")
     elif pars[0] == "clear" or pars[0] == "cls":
         clear_screen()
-    
+
     return pars
 
 
-load_config()
-while (comand := input("Jarvis>")) != "exit":
-    parser(comand)
+if __name__ == "__main__":
+    load_config()
+
+    # start loop for comand line input.
+    while (comand := input("Jarvis>")) != "exit":
+        parser(comand)
