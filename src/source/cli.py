@@ -124,7 +124,7 @@ def clear_screen() -> None:
     None
         clear screen
     """
-    if platform.system() == "Windows":  # Проверяем, если ОС - Windows
+    if platform.system() == "Windows":  # Check, if OS - Windows
         os.system("cls")
     else:  # Для macOS и Linux
         os.system("clear")
