@@ -81,10 +81,10 @@ def help() -> None:
     None
         Output to console help information
     """
-    print(f"{get_from_server('help')}")
+    print(str(get_from_server("help")))
 
 
-def get_from_server(url: str) -> str:
+def get_from_server(url: str) -> Any:
     """
     get_from_server create request to server and return response.
 
@@ -98,7 +98,9 @@ def get_from_server(url: str) -> str:
     str
         Response from server
     """
-    return str(requests.get(f"http://{config['HOST']}:{config['PORT']}/{url}").json())
+    return requests.get(
+        f"http://{config['HOST']}:{config['PORT']}/{url}"
+    ).json()
 
 
 def send_to_server(url: str, command: dict[str, Any]) -> None:
