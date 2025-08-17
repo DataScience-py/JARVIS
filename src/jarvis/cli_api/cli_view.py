@@ -9,5 +9,12 @@ cli_api_router = APIRouter(tags=["cli"])
 
 @cli_api_router.get("/help")
 def cli_help() -> str:
-    """CLI help."""
+    """
+    cli_help Returns the help text for the API.
+
+    Returns
+    -------
+    str
+        help text for the API
+    """
     return help_text
