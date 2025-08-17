@@ -81,7 +81,7 @@ def help() -> None:
     None
         Output to console help information
     """
-    print(get_from_server("help"))
+    print(f"{get_from_server('help')}")
 
 
 def get_from_server(url: str) -> str:
@@ -98,7 +98,7 @@ def get_from_server(url: str) -> str:
     str
         Response from server
     """
-    return requests.get(f"http://{config['HOST']}:{config['PORT']}/{url}").text
+    return str(requests.get(f"http://{config['HOST']}:{config['PORT']}/{url}").json())
 
 
 def send_to_server(url: str, command: dict[str, Any]) -> None:
@@ -158,7 +158,7 @@ def parser(string: str) -> list[str]:
 
     # Manager for comand
 
-    if pars[0] == "--help" or pars[0] == "help":
+    if pars[0] == "--HELP" or pars[0].lower() == "help":
         if len(pars) == 1:
             help()
         else:

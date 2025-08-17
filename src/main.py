@@ -7,7 +7,7 @@ import uvicorn
 
 from jarvis import app
 
-PATH_CONFIG = "uvicorn_server.json"
+PATH_CONFIG = "server.json"
 config: dict[str, Any] = {
     "HOST": "127.0.0.1",
     "PORT": 9000,

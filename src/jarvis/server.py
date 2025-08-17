@@ -2,6 +2,8 @@
 
 from fastapi import FastAPI
 
+from .cli_api import cli_api_router
+
 app = FastAPI()
 
 
@@ -17,3 +19,6 @@ def root() -> dict[str, str]:
 
     """
     return {"message": "Hello World"}
+
+
+app.include_router(cli_api_router)
