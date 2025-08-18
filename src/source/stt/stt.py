@@ -4,6 +4,7 @@ import os
 import wave
 
 import pyaudio
+import requests
 import whisper
 
 # Configuration for audio recording
@@ -13,13 +14,21 @@ RATE = 16000  # Sample rate for Whisper
 CHUNK = 1024
 RECORD_SECONDS = 5  # Adjust as needed
 WAVE_OUTPUT_FILENAME = "temp_audio.wav"
+SERVER = "http://127.0.0.1:9000"
 
 # Load the Whisper model
 model = whisper.load_model("base")
 
 
-def record_audio() -> None:
-    # Initialize PyAudio
+def record_audio(seconds: int = 5) -> None:
+    """
+    record_audio function records audio from the microphon.
+
+    Parameters
+    ----------
+    seconds : int, optional
+        times record audio, by default 5
+    """
     audio = pyaudio.PyAudio()
 
     # Open stream for recording
@@ -34,7 +43,7 @@ def record_audio() -> None:
     print("Recording...")
     frames = []
 
-    for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+    for i in range(0, int(RATE / CHUNK * seconds)):
         data = stream.read(CHUNK)
         frames.append(data)
 
@@ -54,12 +63,24 @@ def record_audio() -> None:
     wf.close()
 
 
+def send_to_server(text: str) -> None:
+    """
+    send_to_server create post request to server.
+
+    Parameters
+    ----------
+    text : str
+        The text to be sent to the server.
+    """
+    requests.post(f"{SERVER}/", json={"text": text})
+
+
 while True:
     # Transcribe the audio using Whisper
     try:
-        record_audio()
+        record_audio(seconds=RECORD_SECONDS)
         result = model.transcribe(WAVE_OUTPUT_FILENAME)
-        print("Transcription:", result["text"])
+        send_to_server(result)
     except Exception as e:
         print(f"Error during transcription: {e}")
     finally:
