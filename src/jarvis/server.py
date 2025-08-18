@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from .cli_api import cli_api_router
+from .stt_api import stt_api_router
 
 app = FastAPI()
 
@@ -22,3 +23,4 @@ def root() -> dict[str, str]:
 
 
 app.include_router(cli_api_router)
+app.include_router(stt_api_router)
