@@ -1,5 +1,6 @@
 """Speech to text convertor from microphokne for JARVIS."""
 
+import json
 import os
 import wave
 
@@ -8,16 +9,41 @@ import requests
 import whisper
 
 # Configuration for audio recording
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-RATE = 16000  # Sample rate for Whisper
-CHUNK = 1024
-RECORD_SECONDS = 5  # Adjust as needed
-WAVE_OUTPUT_FILENAME = "temp_audio.wav"
-SERVER = "http://127.0.0.1:9000"
+config = {
+    "FORMAT": pyaudio.paInt32,
+    "CHANNELS": 1,
+    "RATE": 16000,  # Sample rate for Whisper
+    "CHUNK": 1024,
+    "RECORD_SECONDS": 5,  # Adjust as needed
+    "WAVE_OUTPUT_FILENAME": "temp_audio.wav",
+    "SERVER": "http://127.0.0.1:9000",
+    "MODEL": "base",
+}
 
-# Load the Whisper model
-model = whisper.load_model("base")
+
+FILE_CONFIG = "stt_config.json"
+
+
+def load_config() -> None:
+    """
+    load_config get config from file if file if not exists create new file.
+
+    Use default setting if config is empty.
+
+    Returns
+    -------
+    None
+        Managment file
+    """
+    global config
+    if not os.path.exists(FILE_CONFIG):
+        with open(FILE_CONFIG, "w") as f:
+            json.dump(config, f, indent=4)
+    with open(FILE_CONFIG, "r") as f:
+        temp_config = json.load(f)
+        config = config if temp_config == {} else temp_config
+    with open(FILE_CONFIG, "w") as f:
+        json.dump(config, f, indent=4)
 
 
 def record_audio(seconds: int = 5) -> None:
@@ -31,34 +57,31 @@ def record_audio(seconds: int = 5) -> None:
     """
     audio = pyaudio.PyAudio()
 
-    # Open stream for recording
     stream = audio.open(
-        format=FORMAT,
-        channels=CHANNELS,
-        rate=RATE,
+        format=config["FORMAT"],
+        channels=config["CHANNELS"],
+        rate=config["RATE"],
         input=True,
-        frames_per_buffer=CHUNK,
+        frames_per_buffer=config["CHUNK"],
     )
 
     print("Recording...")
     frames = []
 
-    for i in range(0, int(RATE / CHUNK * seconds)):
-        data = stream.read(CHUNK)
+    for _ in range(0, int(config["RATE"] / config["CHUNK"] * seconds)):
+        data = stream.read(config["CHUNK"])
         frames.append(data)
 
     print("Finished recording.")
 
-    # Stop and close the stream
     stream.stop_stream()
     stream.close()
     audio.terminate()
 
-    # Save the recorded audio to a WAV file
-    wf = wave.open(WAVE_OUTPUT_FILENAME, "wb")
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(audio.get_sample_size(FORMAT))
-    wf.setframerate(RATE)
+    wf = wave.open(config["WAVE_OUTPUT_FILENAME"], "wb")
+    wf.setnchannels(config["CHANNELS"])
+    wf.setsampwidth(audio.get_sample_size(config["FORMAT"]))
+    wf.setframerate(config["RATE"])
     wf.writeframes(b"".join(frames))
     wf.close()
 
@@ -72,17 +95,23 @@ def send_to_server(text: str) -> None:
     text : str
         The text to be sent to the server.
     """
-    requests.post(f"{SERVER}/", json={"text": text})
+    print("Sending text to server...: ", text)
+    requests.post(f"{config['SERVER']}/stt", json={"text": text})
 
+
+load_config()
+
+
+# Load the Whisper model
+model = whisper.load_model(config["MODEL"])
 
 while True:
-    # Transcribe the audio using Whisper
     try:
-        record_audio(seconds=RECORD_SECONDS)
-        result = model.transcribe(WAVE_OUTPUT_FILENAME)
-        send_to_server(result)
+        record_audio(seconds=config["RECORD_SECONDS"])
+        result = model.transcribe(config["WAVE_OUTPUT_FILENAME"])
+        send_to_server(result["text"])
     except Exception as e:
         print(f"Error during transcription: {e}")
     finally:
-        if os.path.exists(WAVE_OUTPUT_FILENAME):
-            os.remove(WAVE_OUTPUT_FILENAME)
+        if os.path.exists(config["WAVE_OUTPUT_FILENAME"]):
+            os.remove(config["WAVE_OUTPUT_FILENAME"])
