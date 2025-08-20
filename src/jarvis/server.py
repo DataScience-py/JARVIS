@@ -2,8 +2,7 @@
 
 from fastapi import FastAPI
 
-from .cli_api import cli_api_router
-from .stt_api import stt_api_router
+from .view import api_router
 
 app = FastAPI()
 
@@ -22,5 +21,4 @@ def root() -> dict[str, str]:
     return {"message": "Hello World"}
 
 
-app.include_router(cli_api_router)
-app.include_router(stt_api_router)
+app.include_router(api_router)

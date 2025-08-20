@@ -5,7 +5,7 @@ from fastapi import APIRouter
 stt_api_router = APIRouter()
 
 
-@stt_api_router.post("/stt")
+@stt_api_router.post("/text")
 async def stt(text: str) -> None:
     """
     Stt get text from stt api.
