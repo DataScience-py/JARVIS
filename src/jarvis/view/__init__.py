@@ -1,3 +1,5 @@
+"""View router."""
+
 from fastapi import APIRouter
 
 from .cli_api import cli_api_router
