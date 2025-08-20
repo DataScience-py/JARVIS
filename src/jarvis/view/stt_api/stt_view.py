@@ -2,6 +2,8 @@
 
 from fastapi import APIRouter
 
+from jarvis.core import core
+
 stt_api_router = APIRouter()
 
 
@@ -15,4 +17,4 @@ async def stt(text: str) -> None:
     text : str
         a text from stt model.
     """
-    print(f"{text=}")
+    core.stt(text)
