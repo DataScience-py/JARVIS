@@ -1,14 +1,21 @@
 """Speech to text convertor from microphokne for JARVIS."""
 
+# TODO: change STT provider to Vosk ()
+
 import json
 import os
+import sys
 import threading
 import time
 import wave
+from queue import Queue
+from typing import Any
 
 import pyaudio
 import requests
+import sounddevice as sd
 import whisper
+from vosk import KaldiRecognizer, Model
 
 # Configuration for audio recording
 config = {
@@ -18,16 +25,19 @@ config = {
     "CHUNK": 1024,
     "RECORD_SECONDS": 5,
     "SERVER": "http://127.0.0.1:9000",
-    "MODEL": "base",
+    "MODEL": "vosk-model-small-ru-0.22",
+    "PROVIDER": "Vosk",
+
 }
 
 FILE_CONFIG = "stt_config.json"
-
+model_loaded = False
 # --- Shared resources for threading ---
 # Use a lock to protect access to the shared file name
 file_lock = threading.Lock()
 # Variable to hold the name of the new audio file
 new_audio_file = ""
+q: Queue[Any] = Queue()
 
 
 def load_config() -> None:
@@ -57,6 +67,9 @@ def record_audio_thread() -> None:
 
     try:
         while True:
+            if not model_loaded:
+                time.sleep(0.5)
+                continue
             frames = []
             for _ in range(
                 0,
@@ -96,9 +109,10 @@ def record_audio_thread() -> None:
 
 def transcribe_audio_thread() -> None:
     """Thread function to transcribe and send audio."""
-    global new_audio_file
+    global new_audio_file, model_loaded
     load_config()
-    model = whisper.load_model(config["MODEL"])
+    model = whisper.load_model(config["MODEL"], in_memory=True)
+    model_loaded = True
     print("Transcription thread started.")
 
     last_processed_file = ""
@@ -138,22 +152,65 @@ def send_to_server(text: str) -> None:
         print(f"Connection error: {e}. Is the server running?")
 
 
+def translate_audio_vosk() -> None:
+    """translate_audio_vosk."""
+    global config
+    model = Model(model_name=config["MODEL"])
+
+    with sd.RawInputStream(
+        samplerate=config["RATE"],
+        blocksize=8000,
+        device=None,
+        dtype="int16",
+        channels=config["CHANNELS"],
+        callback=callback,
+    ):
+        rec = KaldiRecognizer(model, config["RATE"])
+        while True:
+            data = q.get()
+            if rec.AcceptWaveform(data):
+                send_to_server(str(rec.Result()[14:-3]))
+            else:
+                print(rec.PartialResult())
+
+
+def int_or_str(text: Any) -> Any:
+    """int_or_str."""
+    try:
+        return int(text)
+    except ValueError:
+        return text
+
+
+def callback(indata: Any, frames: Any, time: Any, status: Any) -> None:
+    """Callback for check for recording."""  # noqa: D401
+    if status:
+        print(status, frames, time, file=sys.stderr)
+    q.put(bytes(indata))
+
+
 # --- Main execution ---
 if __name__ == "__main__":
     load_config()
+    if config["PROVIDER"] == "Whisper":
+        # Create and start the recording and transcription threads
+        record_thread = threading.Thread(
+            target=record_audio_thread, daemon=True
+        )
+        transcribe_thread = threading.Thread(
+            target=transcribe_audio_thread, daemon=True
+        )
 
-    # Create and start the recording and transcription threads
-    record_thread = threading.Thread(target=record_audio_thread, daemon=True)
-    transcribe_thread = threading.Thread(
-        target=transcribe_audio_thread, daemon=True
-    )
+        record_thread.start()
+        transcribe_thread.start()
 
-    record_thread.start()
-    transcribe_thread.start()
-
-    # Keep the main thread alive so the daemon threads can run
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Program terminated.")
+        # Keep the main thread alive so the daemon threads can run
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Program terminated.")
+    elif config["PROVIDER"] == "Vosk":
+        translate_audio_vosk()
+    else:
+        print("Invalid provider selected.")

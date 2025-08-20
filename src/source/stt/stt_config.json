@@ -4,7 +4,7 @@
     "RATE": 16000,
     "CHUNK": 1024,
     "RECORD_SECONDS": 5,
-    "WAVE_OUTPUT_FILENAME": "temp_audio.wav",
     "SERVER": "http://127.0.0.1:9000",
-    "MODEL": "base"
+    "MODEL": "vosk-model-small-ru-0.22",
+    "PROVIDER": "Vosk"
 }
