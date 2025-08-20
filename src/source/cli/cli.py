@@ -99,7 +99,7 @@ def get_from_server(url: str) -> Any:
         Response from server
     """
     return requests.get(
-        f"http://{config['HOST']}:{config['PORT']}/{url}"
+        f"http://{config['HOST']}:{config['PORT']}/cli/{url}"
     ).json()
 
 

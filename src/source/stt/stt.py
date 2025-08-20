@@ -132,7 +132,7 @@ def send_to_server(text: str) -> None:
     print("Sending text to server: ", text)
     try:
         requests.post(
-            f"{config['SERVER']}/stt?text={text}",
+            f"{config['SERVER']}/stt/text?text={text}",
         )
     except requests.exceptions.ConnectionError as e:
         print(f"Connection error: {e}. Is the server running?")
