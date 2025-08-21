@@ -114,7 +114,9 @@ def send_to_server(url: str, command: dict[str, Any]) -> None:
     command : dict
         command to send to server
     """
-    requests.post(f"http://{config['HOST']}:{config['PORT']}/{url}", command)
+    requests.post(
+        f"http://{config['HOST']}:{config['PORT']}/cli{url}", json=command
+    )
 
 
 def clear_screen() -> None:
@@ -177,6 +179,8 @@ def parser(string: str) -> list[str]:
             print("Send long request, need 1 args")
     elif pars[0] == "clear" or pars[0] == "cls":
         clear_screen()
+    else:
+        send_to_server("/text", {"text": " ".join(pars)})
 
     return pars
 
